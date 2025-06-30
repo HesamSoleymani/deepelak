@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>deepelak</title>
+    <link rel="stylesheet" href="/static/assets/style/paper.css" />
+    <link rel="stylesheet" href="/static/assets/style/style.css" />
+  </head>
+  <body class="paper">
+    <div class="row">
+      <div
+        class="card md-4 col margin-right margin-bottom"
+        style="width: 20rem"
+      >
+        <div class="card-body">
+          <h4 class="card-title">DeePelak</h4>
+          <h5 class="card-subtitle">interactive ALPR playground</h5>
+          <p class="card-text">
+            Explore ALPR models in action — upload images, tweak settings, and
+            compare automatic license plate recognition results instantly.
+          </p>
+        </div>
+      </div>
+      <div class="card md-4 col" style="width: 20rem">
+        <div class="card-body">
+          <div class="row">
+            <input id="file" type="file" hidden onchange="handleFileSelect()" />
+            <input
+              id="buttonid"
+              type="button"
+              class="btn-block btn-secondary-outline"
+              value="Upload Car Image"
+              onclick="handleFileUpload()"
+            />
+          </div>
+          <div class="separator">
+            <h5 class="card-subtitle">Or choose from images below</h5>
+          </div>
+          <img
+            class="thumbnail"
+            src="/static/assets/images/samples/car1.jpg"
+            onclick="handleThumbnailClick(this)"
+          />
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    const fileInput = document.getElementById("file");
+    function handleFileSelect(file) {
+      if (!file) {
+        const file = fileInput.files[0];
+      }
+      alert(file.name);
+    }
+    function handleFileUpload() {
+      fileInput.click();
+    }
+    function handleThumbnailClick(img) {
+      fetch(img.src)
+        .then((res) => res.blob())
+        .then((blob) => {
+          const file = new File([blob], img.src.split("/").pop(), {
+            type: blob.type,
+          });
+          handleFileSelect(file);
+        });
+    }
+  </script>
+</html>
