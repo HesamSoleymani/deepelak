@@ -52,7 +52,7 @@
       if (!file) {
         const file = fileInput.files[0];
       }
-      alert(file.name);
+      uploadImage(file);
     }
     function handleFileUpload() {
       fileInput.click();
@@ -66,6 +66,26 @@
           });
           handleFileSelect(file);
         });
+    }
+    async function uploadImage(selectedFile) {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Result: ", data);
+      } catch (error) {
+        console.error("Error: ", error);
+      }
     }
   </script>
 </html>
