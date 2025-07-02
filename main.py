@@ -6,6 +6,8 @@ import keras
 import numpy as np
 from PIL import Image
 import io
+import matplotlib.pyplot as plt
+import keras_cv
 
 app = FastAPI()
 
@@ -81,14 +83,31 @@ async def predict_license_plate(file: UploadFile = File(...)):
 
             char_pred = plate_recognizer.predict(np.array([plate_resized]))
             license_text = extract_license_text(char_pred)
+
+            keras_cv.visualization.plot_bounding_box_gallery(
+                images=np.array([plate_resized]),
+                value_range=(0, 255),
+                bounding_box_format="xyxy",
+                y_pred=char_pred,
+                scale=7,
+                rows=1,
+                cols=1,
+                path="plate.png",
+                font_scale=0.7,
+            )
             
-            results.append({
-                "license_text": license_text,
-                "confidence": float(confidence),
-                "bbox": [int(x1), int(y1), int(x2), int(y2)]
-            })
+        #     results.append({
+        #         "license_text": license_text,
+        #         "confidence": float(confidence),
+        #         "bbox": [int(x1), int(y1), int(x2), int(y2)]
+        #     })
         
-        return {"results": results}
+        # return {"results": results}
+        return FileResponse(
+            "plate.png",
+            media_type='image/png',
+            filename='plot.png'
+        )
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")

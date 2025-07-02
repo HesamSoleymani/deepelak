@@ -9,10 +9,7 @@
   </head>
   <body class="paper">
     <div class="row">
-      <div
-        class="card md-4 col margin-right margin-bottom"
-        style="width: 20rem"
-      >
+      <div class="card md-4 col margin-right margin-bottom">
         <div class="card-body">
           <h4 class="card-title">DeePelak</h4>
           <h5 class="card-subtitle">interactive ALPR playground</h5>
@@ -22,10 +19,10 @@
           </p>
         </div>
       </div>
-      <div class="card md-4 col" style="width: 20rem">
+      <div class="card md-4 col">
         <div class="card-body">
           <div class="row">
-            <input id="file" type="file" hidden onchange="handleFileSelect()" />
+            <input id="file" type="file" hidden />
             <input
               id="buttonid"
               type="button"
@@ -45,15 +42,20 @@
         </div>
       </div>
     </div>
+    <div class="row">
+      <div class="card md-4 col">
+        <img id="plate" src="/static/assets/images/samples/car1.jpg" />
+      </div>
+    </div>
   </body>
   <script>
     const fileInput = document.getElementById("file");
-    function handleFileSelect(file) {
-      if (!file) {
-        const file = fileInput.files[0];
+    fileInput.addEventListener("change", function (event) {
+      const file = event.target.files[0];
+      if (file) {
+        uploadImage(file);
       }
-      uploadImage(file);
-    }
+    });
     function handleFileUpload() {
       fileInput.click();
     }
@@ -64,7 +66,7 @@
           const file = new File([blob], img.src.split("/").pop(), {
             type: blob.type,
           });
-          handleFileSelect(file);
+          uploadImage(file);
         });
     }
     async function uploadImage(selectedFile) {
@@ -81,8 +83,12 @@
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log("Result: ", data);
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+
+        console.log("result: ", imageUrl);
+
+        document.getElementById("plate").src = imageUrl;
       } catch (error) {
         console.error("Error: ", error);
       }
