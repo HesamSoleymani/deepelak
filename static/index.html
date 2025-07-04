@@ -43,13 +43,17 @@
       </div>
     </div>
     <div class="row">
-      <div class="card md-4 col">
-        <img id="plate" src="/static/assets/images/samples/car1.jpg" />
+      <div class="card md-4 col margin-right margin-bottom">
+        <img id="car" src="/static/assets/images/samples/car1.jpg" />
+      </div>
+      <div class="card md-4 col" style="display: none">
+        <div class="row flex-spaces" id="plate-container"></div>
       </div>
     </div>
   </body>
   <script>
     const fileInput = document.getElementById("file");
+    const plateContainer = document.getElementById("plate-container");
     fileInput.addEventListener("change", function (event) {
       const file = event.target.files[0];
       if (file) {
@@ -69,26 +73,56 @@
           uploadImage(file);
         });
     }
+    function addPlate(imgUrl) {
+      plateContainer.parentElement.style.display = "block";
+      const colDiv = document.createElement("div");
+      colDiv.className = "col md-6";
+      const img = document.createElement("img");
+      img.src = imgUrl;
+      colDiv.appendChild(img);
+      plateContainer.appendChild(colDiv);
+    }
+    function b64toBlob(b64) {
+      const byteCharacters = atob(b64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      return new Blob([byteArray], { type: "image/png" });
+    }
     async function uploadImage(selectedFile) {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+      const detection_payload = new FormData();
+      detection_payload.append("file", selectedFile);
 
       try {
-        const response = await fetch("/predict", {
+        const detection_response = await fetch("/detect", {
           method: "POST",
-          body: formData,
+          body: detection_payload,
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!detection_response.ok) {
+          throw new Error(`HTTP error! status: ${detection_response.status}`);
         }
 
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
+        let should_send_request = true;
 
-        console.log("result: ", imageUrl);
+        const detection_data = await detection_response.json();
+        const carBlob = b64toBlob(detection_data.image);
+        const carUrl = URL.createObjectURL(carBlob);
+        document.getElementById("car").src = carUrl;
 
-        document.getElementById("plate").src = imageUrl;
+        while (should_send_request) {
+          const recognition_response = await fetch(
+            `/recognize?rid=${detection_data.rid}`
+          );
+
+          const recognition_data = await recognition_response.json();
+          const plateBlob = b64toBlob(recognition_data.image);
+          const plateUrl = URL.createObjectURL(plateBlob);
+          addPlate(plateUrl);
+          should_send_request = recognition_data.more;
+        }
       } catch (error) {
         console.error("Error: ", error);
       }
