@@ -23,3 +23,26 @@
   object-position: center;
   cursor: pointer;
 }
+
+.cut-text {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  width: 160px;
+  height: 1.2em;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading {
+  transform-origin: center;
+  animation: spin 2s linear infinite;
+  width: 50%;
+  box-sizing: content-box;
+  margin: auto;
+}

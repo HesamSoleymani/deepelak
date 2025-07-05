@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="card md-4 col">
-        <div class="card-body">
+        <div id="file-upload" class="card-body">
           <div class="row">
             <input id="file" type="file" hidden />
             <input
@@ -40,12 +40,30 @@
             onclick="handleThumbnailClick(this)"
           />
         </div>
+        <div id="file-details" class="card-body" style="display: none">
+          <div class="row flex-bottom" style="flex-wrap: nowrap">
+            <img
+              id="uploaded-file"
+              class="thumbnail margin-right"
+              src="/static/assets/images/samples/car1.jpg"
+            />
+            <div style="overflow: hidden">
+              <p id="filename" class="cut-text"></p>
+              <p id="filesize" style="margin-bottom: 0 !important"></p>
+            </div>
+          </div>
+          <div class="progress margin-bottom">
+            <div id="upload-progress" class="bar striped secondary w-40"></div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="row">
-      <div class="card md-4 col margin-right margin-bottom">
-        <img id="car" src="/static/assets/images/samples/car1.jpg" />
-      </div>
+      <div
+        id="car"
+        class="card md-4 col margin-right margin-bottom"
+        style="display: none"
+      ></div>
       <div class="card md-4 col" style="display: none">
         <div class="row flex-spaces" id="plate-container"></div>
       </div>
@@ -54,8 +72,18 @@
   <script>
     const fileInput = document.getElementById("file");
     const plateContainer = document.getElementById("plate-container");
+    const uploadProgress = document.getElementById("upload-progress");
+    const car = document.getElementById("car");
+    const loading = document.createElement("div");
+    loading.appendChild(document.createElement("img"));
+    loading.appendChild(document.createElement("p"));
+    loading.childNodes[0].className = "loading no-border";
+    loading.childNodes[0].src = "/static/assets/icons/processing.svg";
+    loading.childNodes[1].innerHTML = "processing...";
+    loading.childNodes[1].className = "text-center";
     fileInput.addEventListener("change", function (event) {
       const file = event.target.files[0];
+      document.getElementById("uploaded-file").src = URL.createObjectURL(file);
       if (file) {
         uploadImage(file);
       }
@@ -74,7 +102,7 @@
         });
     }
     function addPlate(imgUrl) {
-      plateContainer.parentElement.style.display = "block";
+      plateContainer.removeChild(plateContainer.lastChild);
       const colDiv = document.createElement("div");
       colDiv.className = "col md-6";
       const img = document.createElement("img");
@@ -92,27 +120,71 @@
       return new Blob([byteArray], { type: "image/png" });
     }
     async function uploadImage(selectedFile) {
+      document.getElementById("file-upload").style.display = "none";
+      document.getElementById("file-details").style.display = "block";
+      plateContainer.parentElement.style.display = "none";
+      car.style.display = "none";
+      document.getElementById("filename").innerHTML = selectedFile.name;
+      let size = selectedFile.size;
+      let displaySize;
+      if (size >= 1024 * 1024) {
+        displaySize = `${(size / (1024 * 1024)).toFixed(1)} MB`;
+      } else {
+        displaySize = `${Math.round(size / 1024)} KB`;
+      }
+      document.getElementById("filesize").innerHTML = displaySize;
+
       const detection_payload = new FormData();
       detection_payload.append("file", selectedFile);
 
       try {
-        const detection_response = await fetch("/detect", {
-          method: "POST",
-          body: detection_payload,
+        const xhr = new XMLHttpRequest();
+        const getDetectionResponse = await new Promise((resolve) => {
+          xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable) {
+              console.log("upload progress:", event.loaded / event.total);
+              uploadProgress.style.width = `${
+                (event.loaded / event.total) * 100
+              }%`;
+              uploadProgress.innerHTML = `${Math.round(
+                (event.loaded / event.total) * 100
+              )}%`;
+              if (event.loaded === event.total) {
+                car.innerHTML = "";
+                car.style.display = "block";
+                loading.className = "";
+                car.appendChild(loading);
+              }
+            }
+          });
+          xhr.addEventListener("loadend", () => {
+            console.log("request complete");
+            const responseJson = JSON.parse(xhr.responseText);
+            resolve(responseJson);
+          });
+          xhr.open("POST", "/detect", true);
+          xhr.send(detection_payload);
         });
 
-        if (!detection_response.ok) {
-          throw new Error(`HTTP error! status: ${detection_response.status}`);
-        }
+        const detection_data = getDetectionResponse;
+        console.log("result :", detection_data);
+
+        // if (!detection_response.ok) {
+        //   throw new Error(`HTTP error! status: ${detection_response.status}`);
+        // }
 
         let should_send_request = true;
-
-        const detection_data = await detection_response.json();
         const carBlob = b64toBlob(detection_data.image);
         const carUrl = URL.createObjectURL(carBlob);
-        document.getElementById("car").src = carUrl;
 
+        car.innerHTML = "";
+        car.style.display = "block";
+        car.appendChild(document.createElement("img")).src = carUrl;
+        plateContainer.innerHTML = "";
+        plateContainer.parentElement.style.display = "block";
         while (should_send_request) {
+          plateContainer.appendChild(loading);
+          plateContainer.lastChild.className = "col md-6";
           const recognition_response = await fetch(
             `/recognize?rid=${detection_data.rid}`
           );
