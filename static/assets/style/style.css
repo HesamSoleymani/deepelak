@@ -50,3 +50,18 @@
 .plate-text {
   unicode-bidi: isolate;
 }
+
+.model {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px 0;
+}
+
+.model div {
+  margin: 0;
+}
+
+.model img {
+  width: 20px;
+}

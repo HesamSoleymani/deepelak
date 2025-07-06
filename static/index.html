@@ -67,11 +67,38 @@
     </div>
     <div class="row">
       <div
-        id="car"
         class="card md-4 col margin-right margin-bottom"
         style="display: none"
-      ></div>
+      >
+        <div>
+          <p style="margin: 0">step 1:</p>
+          <h3 style="margin: 0">License Plate Detection</h3>
+          <div class="model">
+            <span>model:</span>
+            <span class="badge secondary">YOLO V8</span>
+            <div
+              popover-bottom="epochs = 3 | learning rate = 0.001 | global clipnorm = 10"
+            >
+              <img class="no-border" src="/static/assets/icons/info.svg" />
+            </div>
+          </div>
+        </div>
+        <div id="car"></div>
+      </div>
       <div class="card md-4 col" style="display: none">
+        <div>
+          <p style="margin: 0">step 2:</p>
+          <h3 style="margin: 0">License Plate Recognition</h3>
+          <div class="model">
+            <span>model:</span>
+            <span class="badge secondary">YOLO V8</span>
+            <div
+              popover-bottom="epochs = 3 | learning rate = 0.001 | global clipnorm = 10"
+            >
+              <img class="no-border" src="/static/assets/icons/info.svg" />
+            </div>
+          </div>
+        </div>
         <div class="row flex-spaces" id="plate-container"></div>
       </div>
     </div>
@@ -158,7 +185,7 @@
       document.getElementById("file-upload").style.display = "none";
       document.getElementById("file-details").style.display = "block";
       plateContainer.parentElement.style.display = "none";
-      car.style.display = "none";
+      car.parentElement.style.display = "none";
       document.getElementById("filename").innerHTML = selectedFile.name;
       let size = selectedFile.size;
       let displaySize;
@@ -186,7 +213,7 @@
               )}%`;
               if (event.loaded === event.total) {
                 car.innerHTML = "";
-                car.style.display = "block";
+                car.parentElement.style.display = "block";
                 loading.className = "";
                 car.appendChild(loading);
                 car.scrollIntoView({ behavior: "smooth" });
@@ -215,7 +242,7 @@
 
         car.innerHTML = "";
         plateContainer.innerHTML = "";
-        car.style.display = "block";
+        car.parentElement.style.display = "block";
         car.appendChild(document.createElement("img")).src = carUrl;
         plateContainer.parentElement.style.display = "block";
         if (!should_send_request)
