@@ -55,6 +55,13 @@
           <div class="progress margin-bottom">
             <div id="upload-progress" class="bar striped secondary w-40"></div>
           </div>
+          <div
+            id="restart"
+            class="text-center margin-top"
+            style="cursor: pointer"
+          >
+            <a>Upload another image</a>
+          </div>
         </div>
       </div>
     </div>
@@ -81,8 +88,18 @@
     loading.childNodes[0].src = "/static/assets/icons/processing.svg";
     loading.childNodes[1].innerHTML = "processing...";
     loading.childNodes[1].className = "text-center";
+    document
+      .getElementById("restart")
+      .addEventListener("click", function (event) {
+        document.getElementById("file-upload").style.display = "block";
+        document.getElementById("file-details").style.display = "none";
+      });
     fileInput.addEventListener("change", function (event) {
       const file = event.target.files[0];
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Filesize is too large! Max filesize is 10MB.");
+        return;
+      }
       document.getElementById("uploaded-file").src = URL.createObjectURL(file);
       if (file) {
         uploadImage(file);
@@ -92,6 +109,7 @@
       fileInput.click();
     }
     function handleThumbnailClick(img) {
+      document.getElementById("uploaded-file").src = img.src;
       fetch(img.src)
         .then((res) => res.blob())
         .then((blob) => {
@@ -109,15 +127,19 @@
 
       const match = text.match(/^(\d+)([^\d]+)(\d+)$/);
       const plateText = document.createElement("p");
-      const span1 = document.createElement("span");
-      span1.className = "plate-text";
-      span1.innerHTML = match[1];
-      const span2 = document.createElement("span");
-      span2.innerHTML = match[2];
-      const span3 = document.createElement("span");
-      span3.className = "plate-text";
-      span3.innerHTML = match[3];
-      plateText.append(span1, span2, span3);
+      if (match) {
+        const span1 = document.createElement("span");
+        span1.className = "plate-text";
+        span1.innerHTML = match[1];
+        const span2 = document.createElement("span");
+        span2.innerHTML = match[2];
+        const span3 = document.createElement("span");
+        span3.className = "plate-text";
+        span3.innerHTML = match[3];
+        plateText.append(span1, span2, span3);
+      } else {
+        plateText.innerHTML = text;
+      }
 
       colDiv.append(img, plateText);
       plateContainer.removeChild(plateContainer.lastChild);
@@ -167,6 +189,7 @@
                 car.style.display = "block";
                 loading.className = "";
                 car.appendChild(loading);
+                car.scrollIntoView({ behavior: "smooth" });
               }
             }
           });
@@ -186,15 +209,17 @@
         //   throw new Error(`HTTP error! status: ${detection_response.status}`);
         // }
 
-        let should_send_request = true;
+        let should_send_request = parseInt(detection_data.count) > 0;
         const carBlob = b64toBlob(detection_data.image);
         const carUrl = URL.createObjectURL(carBlob);
 
         car.innerHTML = "";
+        plateContainer.innerHTML = "";
         car.style.display = "block";
         car.appendChild(document.createElement("img")).src = carUrl;
-        plateContainer.innerHTML = "";
         plateContainer.parentElement.style.display = "block";
+        if (!should_send_request)
+          plateContainer.innerHTML = "No license plate found";
         while (should_send_request) {
           plateContainer.appendChild(loading);
           plateContainer.lastChild.className = "col md-6";

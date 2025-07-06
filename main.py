@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import keras_cv
 import base64
 import uuid
+import os
 
 app = FastAPI()
 
@@ -102,6 +103,8 @@ async def predict_license_plate(file: UploadFile = File(...)):
         with open(filename, "rb") as f:
             image_base64 = base64.b64encode(f.read()).decode('utf-8')
 
+        os.remove(filename)
+
         temp_storage[rid] = {
             "index": 0,
             "pred": plate_pred,
@@ -111,7 +114,8 @@ async def predict_license_plate(file: UploadFile = File(...)):
 
         return JSONResponse(content={
             "image": image_base64,
-            "rid": rid
+            "rid": rid,
+            "count": str(plate_pred["num_detections"][0])
         })
     
     except Exception as e:
@@ -154,6 +158,8 @@ async def predict_license_plate(rid:str):
 
         with open(filename, "rb") as f:
             image_base64 = base64.b64encode(f.read()).decode('utf-8')
+
+        os.remove(filename)
 
         temp_storage[rid]["index"] = i + 1
 
