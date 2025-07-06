@@ -101,13 +101,26 @@
           uploadImage(file);
         });
     }
-    function addPlate(imgUrl) {
-      plateContainer.removeChild(plateContainer.lastChild);
+    function addPlate(imgUrl, text) {
       const colDiv = document.createElement("div");
       colDiv.className = "col md-6";
       const img = document.createElement("img");
       img.src = imgUrl;
-      colDiv.appendChild(img);
+
+      const match = text.match(/^(\d+)([^\d]+)(\d+)$/);
+      const plateText = document.createElement("p");
+      const span1 = document.createElement("span");
+      span1.className = "plate-text";
+      span1.innerHTML = match[1];
+      const span2 = document.createElement("span");
+      span2.innerHTML = match[2];
+      const span3 = document.createElement("span");
+      span3.className = "plate-text";
+      span3.innerHTML = match[3];
+      plateText.append(span1, span2, span3);
+
+      colDiv.append(img, plateText);
+      plateContainer.removeChild(plateContainer.lastChild);
       plateContainer.appendChild(colDiv);
     }
     function b64toBlob(b64) {
@@ -192,7 +205,7 @@
           const recognition_data = await recognition_response.json();
           const plateBlob = b64toBlob(recognition_data.image);
           const plateUrl = URL.createObjectURL(plateBlob);
-          addPlate(plateUrl);
+          addPlate(plateUrl, recognition_data.text);
           should_send_request = recognition_data.more;
         }
       } catch (error) {

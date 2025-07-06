@@ -159,6 +159,7 @@ async def predict_license_plate(rid:str):
 
         return JSONResponse(content={
             "image": image_base64,
+            "text": license_text,
             "more": bool(plate_pred["num_detections"][0] != temp_storage[rid]["index"])
         })
         

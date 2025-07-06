@@ -46,3 +46,7 @@
   box-sizing: content-box;
   margin: auto;
 }
+
+.plate-text {
+  unicode-bidi: isolate;
+}
