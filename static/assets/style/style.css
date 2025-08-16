@@ -63,6 +63,16 @@
   margin: 0;
 }
 
-.model img {
+.info {
   width: 20px;
+}
+
+.model-selection tr {
+  cursor: pointer;
+}
+
+.has-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }

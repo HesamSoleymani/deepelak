@@ -10,7 +10,7 @@
   </head>
   <body class="paper">
     <div class="row">
-      <div class="card md-4 col margin-right margin-bottom">
+      <div class="card md-8 col margin-right margin-bottom">
         <div class="card-body">
           <h4 class="card-title">DeePelak</h4>
           <h5 class="card-subtitle">interactive ALPR playground</h5>
@@ -27,6 +27,125 @@
           <a target="_blank" href="https://github.com/HesamSoleymani/deepelak"
             >github</a
           >
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="card md-4 col margin-right margin-bottom">
+        <div class="card-body">
+          <h4 class="card-title">Model Selection</h4>
+          <h5 class="card-subtitle">Plate Detector Model</h5>
+          <table class="table-hover model-selection">
+            <thead>
+              <tr>
+                <th>name</th>
+                <th>size</th>
+                <th>epochs</th>
+                <th>validation results</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                onclick="selectModel(this,'detector')"
+                data-model="plate_detector_e1"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+                <td>1</td>
+
+                <td>
+                  <div
+                    popover-bottom="MaP: 0.5142 - MaP@[IoU=50]: 0.8632 - MaP@[IoU=75]: 0.5824 - MaP@[area=small]: 0.3351 - MaP@[area=medium]: 0.6169 - MaP@[area=large]: 0.5014 - Recall@[max_detections=1]: 0.5314 - Recall@[max_detections=10]: 0.5958 - Recall@[max_detections=100]: 0.5958 - Recall@[area=small]: 0.4460 - Recall@[area=medium]: 0.6944 - Recall@[area=large]: 0.5991"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+              </tr>
+              <tr
+                onclick="selectModel(this,'detector')"
+                data-model="plate_detector"
+                style="background: #69a1d433"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+                <td>3</td>
+              </tr>
+            </tbody>
+          </table>
+          <h5 class="card-subtitle" style="margin-top: 16px">
+            Plate Recognizer Model
+          </h5>
+          <table class="table-hover model-selection">
+            <thead>
+              <tr>
+                <th>name</th>
+                <th>size</th>
+                <th>epochs</th>
+                <th>validation results</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                onclick="selectModel(this,'recognizer')"
+                data-model="plate_recognizer"
+                style="background: #69a1d433"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+                <td>3</td>
+              </tr>
+              <tr
+                onclick="selectModel(this,'recognizer')"
+                data-model="plate_recognizer_e5"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+
+                <td>5</td>
+                <td>
+                  <div
+                    popover-bottom="MaP: 0.5672 - MaP@[IoU=50]: 0.7952 - MaP@[IoU=75]: 0.6857 - MaP@[area=small]: 0.0000e+00 - MaP@[area=medium]: 0.6867 - MaP@[area=large]: 0.5426 - Recall@[max_detections=1]: 0.5497 - Recall@[max_detections=10]: 0.6141 - Recall@[max_detections=100]: 0.6141 - Recall@[area=small]: 0.0000e+00 - Recall@[area=medium]: 0.7253 - Recall@[area=large]: 0.5924"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
       <div class="card md-4 col">
@@ -116,7 +235,7 @@
             <div
               popover-bottom="epochs = 3 | learning rate = 0.001 | global clipnorm = 10"
             >
-              <img class="no-border" src="/static/assets/icons/info.svg" />
+              <img class="no-border info" src="/static/assets/icons/info.svg" />
             </div>
           </div>
         </div>
@@ -132,7 +251,7 @@
             <div
               popover-bottom="epochs = 3 | learning rate = 0.001 | global clipnorm = 10"
             >
-              <img class="no-border" src="/static/assets/icons/info.svg" />
+              <img class="no-border info" src="/static/assets/icons/info.svg" />
             </div>
           </div>
         </div>
@@ -141,6 +260,8 @@
     </div>
   </body>
   <script>
+    let selected_detector_model = "plate_detector";
+    let selected_recognizer_model = "plate_recognizer";
     const fileInput = document.getElementById("file");
     const plateContainer = document.getElementById("plate-container");
     const uploadProgress = document.getElementById("upload-progress");
@@ -168,6 +289,7 @@
       if (file) {
         uploadImage(file);
       }
+      fileInput.value = "";
     });
     function handleFileUpload() {
       fileInput.click();
@@ -182,6 +304,16 @@
           });
           uploadImage(file);
         });
+    }
+    function selectModel(div, type) {
+      div.parentElement.childNodes.forEach((element) => {
+        if (element.style?.background) {
+          element.style.background = "transparent";
+        }
+      });
+      div.style.background = "#69a1d433";
+      if (type == "detector") selected_detector_model = div.dataset.model;
+      else selected_recognizer_model = div.dataset.model;
     }
     function addPlate(imgUrl, text) {
       const colDiv = document.createElement("div");
@@ -234,6 +366,7 @@
       document.getElementById("filesize").innerHTML = displaySize;
 
       const detection_payload = new FormData();
+      detection_payload.append("model", selected_detector_model);
       detection_payload.append("file", selectedFile);
 
       try {
@@ -288,7 +421,7 @@
           plateContainer.appendChild(loading);
           plateContainer.lastChild.className = "col md-6";
           const recognition_response = await fetch(
-            `/recognize?rid=${detection_data.rid}`
+            `/recognize?rid=${detection_data.rid}&model=${selected_recognizer_model}`
           );
 
           const recognition_data = await recognition_response.json();

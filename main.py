@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 import tensorflow as tf
@@ -15,9 +15,18 @@ import os
 app = FastAPI()
 
 print("Loading models...")
-plate_detector = keras.models.load_model("./models/car_model.keras")
-plate_recognizer = keras.models.load_model("./models/plate_model.keras")
+plate_detector = keras.models.load_model("./models/plate_detector.keras")
+plate_recognizer = keras.models.load_model("./models/plate_recognizer.keras")
+plate_detector_e1 = keras.models.load_model("./models/plate_detector_e1.keras")
+plate_recognizer_e5 = keras.models.load_model("./models/plate_recognizer_e5.keras")
 print("Models loaded successfully!")
+
+models = {
+    "plate_detector": plate_detector,
+    "plate_recognizer": plate_recognizer,
+    "plate_detector_e1": plate_detector_e1,
+    "plate_recognizer_e5": plate_recognizer_e5,
+}
 
 class_mapping = {0: '9', 1: '1', 2: 'و', 3: '2', 4: '6', 5: '7', 6: '8', 7: 'ن', 8: '3', 9: '5', 10: 'م', 11: 'ی', 12: 'ت', 13: 'ل', 14: '4', 15: 'ه\u200d', 16: 'ط', 17: '0', 18: 'د', 19: 'ق', 20: 'ص', 21: 'ب', 22: 'ج', 23: 'س', 24: 'ع', 25: 'ژ (معلولین و جانبازان)', 26: 'الف', 27: 'ز', 28: 'ش', 29: 'پ', 30: 'ث'}
 
@@ -47,7 +56,7 @@ async def read_index():
     return FileResponse('static/index.html')
 
 @app.post("/detect")
-async def predict_license_plate(file: UploadFile = File(...)):
+async def predict_license_plate(model: str = Form(...),file: UploadFile = File(...)):
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
@@ -67,7 +76,7 @@ async def predict_license_plate(file: UploadFile = File(...)):
         
         image_resized = tf.image.resize_with_pad(image_tensor, target_height=640, target_width=640)
         
-        plate_pred = plate_detector.predict(np.array([image_resized]))
+        plate_pred = models[model].predict(np.array([image_resized]))
 
         conf_threshold = 0.5
 
@@ -122,7 +131,7 @@ async def predict_license_plate(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error : {str(e)}")
 
 @app.get("/recognize")
-async def predict_license_plate(rid:str):
+async def predict_license_plate(rid:str,model:str="model_recognizer"):
     if not rid in temp_storage:
         raise HTTPException(status_code=400, detail="invalid rid")
     
@@ -142,7 +151,7 @@ async def predict_license_plate(rid:str):
         plate_region = image_tensor[y1:y2, x1:x2]
         plate_resized = tf.image.resize_with_pad(plate_region, target_height=640, target_width=640)
 
-        char_pred = plate_recognizer.predict(np.array([plate_resized]))
+        char_pred = models[model].predict(np.array([plate_resized]))
         license_text = extract_license_text(char_pred)
 
         keras_cv.visualization.plot_bounding_box_gallery(
