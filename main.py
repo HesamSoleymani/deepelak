@@ -13,6 +13,34 @@ import uuid
 import os
 import glob
 import psutil
+from keras import backend as K
+
+import keras
+import gc
+
+models = {}
+
+def build_model_path(model_name: str) -> str:
+    folder = model_name.rsplit("_e", 1)[0]
+    base_dir = "final_models"
+    return os.path.join(base_dir, folder, model_name + ".keras")
+
+def get_model(model_name: str, path: str):
+    if model_name not in models:
+        print(f"Loading model {model_name}...")
+        models[model_name] = keras.models.load_model(path)
+        print_memory()
+    return models[model_name]
+
+def unload_model(model_name: str):
+    print("****", model_name, "****",model_name in models)
+    if model_name in models:
+        print(f"Unloading model {model_name}...")
+        del models[model_name]
+        gc.collect()
+        K.clear_session()
+        print_memory()
+
 
 def print_memory():
     mem = psutil.virtual_memory()
@@ -20,15 +48,15 @@ def print_memory():
 
 app = FastAPI()
 
-print("Loading models...")
-print_memory()
-models = {}
-for filepath in glob.glob("./final_models/**/*.keras", recursive=True):
-    model_name = os.path.splitext(os.path.basename(filepath))[0]
-    print(f"Loading model: {model_name} from {filepath}")
-    models[model_name] = keras.models.load_model(filepath)
-    print_memory()
-print("Models loaded successfully!")
+# print("Loading models...")
+# print_memory()
+# models = {}
+# for filepath in glob.glob("./final_models/**/*.keras", recursive=True):
+#     model_name = os.path.splitext(os.path.basename(filepath))[0]
+#     print(f"Loading model: {model_name} from {filepath}")
+#     models[model_name] = keras.models.load_model(filepath)
+#     print_memory()
+# print("Models loaded successfully!")
 
 class_mapping = {0: '9', 1: '1', 2: 'و', 3: '2', 4: '6', 5: '7', 6: '8', 7: 'ن', 8: '3', 9: '5', 10: 'م', 11: 'ی', 12: 'ت', 13: 'ل', 14: '4', 15: 'ه\u200d', 16: 'ط', 17: '0', 18: 'د', 19: 'ق', 20: 'ص', 21: 'ب', 22: 'ج', 23: 'س', 24: 'ع', 25: 'ژ (معلولین و جانبازان)', 26: 'الف', 27: 'ز', 28: 'ش', 29: 'پ', 30: 'ث'}
 
@@ -59,10 +87,14 @@ async def read_index():
 
 @app.post("/detect")
 async def predict_license_plate(model: str = Form(...),file: UploadFile = File(...)):
+
+
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    try:
+    try:   
+        model_path = build_model_path(model)
+        current_model = get_model(model, model_path)
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
         
@@ -78,7 +110,8 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
         
         image_resized = tf.image.resize_with_pad(image_tensor, target_height=640, target_width=640)
         
-        plate_pred = models[model].predict(np.array([image_resized]))
+        plate_pred = current_model.predict(np.array([image_resized]))
+        unload_model(model)
 
         conf_threshold = 0.5
 
@@ -122,13 +155,12 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
             "sizes": [w,h,w1,h1],
             "image_tensor": image_tensor,
         }
-
         return JSONResponse(content={
             "image": image_base64,
             "rid": rid,
             "count": str(plate_pred["num_detections"][0])
         })
-    
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error : {str(e)}")
 
@@ -138,6 +170,8 @@ async def predict_license_plate(rid:str,model:str="model_recognizer"):
         raise HTTPException(status_code=400, detail="invalid rid")
     
     try:
+        model_path = build_model_path(model)
+        current_model = get_model(model, model_path)
         i = temp_storage[rid]["index"]
         plate_pred = temp_storage[rid]["pred"]
         box = plate_pred["boxes"][0][i]
@@ -174,6 +208,7 @@ async def predict_license_plate(rid:str,model:str="model_recognizer"):
 
         temp_storage[rid]["index"] = i + 1
 
+        unload_model(model_path)
         return JSONResponse(content={
             "image": image_base64,
             "text": license_text,

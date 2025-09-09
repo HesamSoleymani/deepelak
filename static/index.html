@@ -35,117 +35,102 @@
         <div class="card-body">
           <h4 class="card-title">Model Selection</h4>
           <h5 class="card-subtitle">Plate Detector Model</h5>
-          <table class="table-hover model-selection">
-            <thead>
-              <tr>
-                <th>name</th>
-                <th>size</th>
-                <th>epochs</th>
-                <th>validation results</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                onclick="selectModel(this,'detector')"
-                data-model="plate_detector_e1"
+          <div class="row margin-bottom">
+            <div class="col padding-small">
+              <label>current selected model</label>
+              <div
+                id="model-string"
+                class="input-block padding-small"
+                style="
+                  background: #f5f5f5;
+                  padding: 8px 12px;
+                  border-radius: 4px;
+                "
               >
-                <td>YOLO v8</td>
-                <td class="has-info">
-                  small
-                  <div popover-bottom="13M parameters" style="margin: 0">
-                    <img
-                      class="no-border info"
-                      src="/static/assets/icons/info.svg"
-                    />
-                  </div>
-                </td>
-                <td>1</td>
-
-                <td>
-                  <div
-                    popover-bottom="MaP: 0.5142 - MaP@[IoU=50]: 0.8632 - MaP@[IoU=75]: 0.5824 - MaP@[area=small]: 0.3351 - MaP@[area=medium]: 0.6169 - MaP@[area=large]: 0.5014 - Recall@[max_detections=1]: 0.5314 - Recall@[max_detections=10]: 0.5958 - Recall@[max_detections=100]: 0.5958 - Recall@[area=small]: 0.4460 - Recall@[area=medium]: 0.6944 - Recall@[area=large]: 0.5991"
-                    style="margin: 0"
-                  >
-                    show
-                  </div>
-                </td>
-              </tr>
-              <tr
-                onclick="selectModel(this,'detector')"
-                data-model="plate_detector"
-                style="background: #69a1d433"
-              >
-                <td>YOLO v8</td>
-                <td class="has-info">
-                  small
-                  <div popover-bottom="13M parameters" style="margin: 0">
-                    <img
-                      class="no-border info"
-                      src="/static/assets/icons/info.svg"
-                    />
-                  </div>
-                </td>
-                <td>3</td>
-              </tr>
-            </tbody>
-          </table>
+                yolov8_s_none_0.001_e1
+              </div>
+            </div>
+          </div>
+          <div class="row margin-bottom">
+            <div class="col padding-small">
+              <label for="detector-model-name">Model Name</label>
+              <select id="detector-model-name" class="input-block">
+                <option value="yolov8" selected>YOLOv8</option>
+              </select>
+            </div>
+            <div class="col padding-small">
+              <label for="detector-model-size">Model Size</label>
+              <select id="detector-model-size" class="input-block">
+                <option value="xs">XS</option>
+                <option value="s">S</option>
+                <option value="m">M</option>
+                <option value="l">L</option>
+                <option value="xl">XL</option>
+              </select>
+            </div>
+            <div class="col padding-small">
+              <label for="detector-pretrained">Pretrained On</label>
+              <select id="detector-pretrained" class="input-block">
+                <option value="none" selected>None</option>
+                <option value="coco">COCO</option>
+                <option value="pascalvoc">Pascal VOC</option>
+              </select>
+            </div>
+            <div class="col padding-small">
+              <label for="detector-lr">Learning Rate</label>
+              <select id="detector-lr" class="input-block">
+                <option value="0.0001">0.0001</option>
+                <option value="0.0005">0.0005</option>
+                <option value="0.001" selected>0.001</option>
+                <option value="0.005">0.005</option>
+                <option value="0.01">0.01</option>
+              </select>
+            </div>
+            <div class="col padding-small">
+              <label for="detector-epochs">Epochs</label>
+              <select id="detector-epochs" class="input-block">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+          </div>
+          <script>
+            function updateModelString() {
+              const name = document.getElementById("detector-model-name").value;
+              const size = document.getElementById("detector-model-size").value;
+              const pretrained = document.getElementById(
+                "detector-pretrained"
+              ).value;
+              const lr = document.getElementById("detector-lr").value;
+              let epochs = document.getElementById("detector-epochs").value;
+              epochs = epochs.padStart(4, "0");
+              const modelStr = `${name}_${size}_${pretrained}_${lr}_e${epochs}`;
+              document.getElementById("model-string").textContent = modelStr;
+            }
+            [
+              "detector-model-name",
+              "detector-model-size",
+              "detector-pretrained",
+              "detector-lr",
+              "detector-epochs",
+            ].forEach((id) => {
+              document
+                .getElementById(id)
+                .addEventListener("change", updateModelString);
+            });
+            updateModelString();
+          </script>
           <h5 class="card-subtitle" style="margin-top: 16px">
             Plate Recognizer Model
           </h5>
-          <table class="table-hover model-selection">
-            <thead>
-              <tr>
-                <th>name</th>
-                <th>size</th>
-                <th>epochs</th>
-                <th>validation results</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                onclick="selectModel(this,'recognizer')"
-                data-model="plate_recognizer"
-                style="background: #69a1d433"
-              >
-                <td>YOLO v8</td>
-                <td class="has-info">
-                  small
-                  <div popover-bottom="13M parameters" style="margin: 0">
-                    <img
-                      class="no-border info"
-                      src="/static/assets/icons/info.svg"
-                    />
-                  </div>
-                </td>
-                <td>3</td>
-              </tr>
-              <tr
-                onclick="selectModel(this,'recognizer')"
-                data-model="plate_recognizer_e5"
-              >
-                <td>YOLO v8</td>
-                <td class="has-info">
-                  small
-                  <div popover-bottom="13M parameters" style="margin: 0">
-                    <img
-                      class="no-border info"
-                      src="/static/assets/icons/info.svg"
-                    />
-                  </div>
-                </td>
-
-                <td>5</td>
-                <td>
-                  <div
-                    popover-bottom="MaP: 0.5672 - MaP@[IoU=50]: 0.7952 - MaP@[IoU=75]: 0.6857 - MaP@[area=small]: 0.0000e+00 - MaP@[area=medium]: 0.6867 - MaP@[area=large]: 0.5426 - Recall@[max_detections=1]: 0.5497 - Recall@[max_detections=10]: 0.6141 - Recall@[max_detections=100]: 0.6141 - Recall@[area=small]: 0.0000e+00 - Recall@[area=medium]: 0.7253 - Recall@[area=large]: 0.5924"
-                    style="margin: 0"
-                  >
-                    show
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
       <div class="card md-4 col">
@@ -366,7 +351,10 @@
       document.getElementById("filesize").innerHTML = displaySize;
 
       const detection_payload = new FormData();
-      detection_payload.append("model", selected_detector_model);
+      detection_payload.append(
+        "model",
+        "detector_" + document.getElementById("model-string").textContent
+      );
       detection_payload.append("file", selectedFile);
 
       try {
@@ -436,3 +424,251 @@
     }
   </script>
 </html>
+
+<!-- <div class="card md-4 col margin-right margin-bottom">
+        <div class="card-body">
+          <h4 class="card-title">Model Selection</h4>
+          <h5 class="card-subtitle">Plate Detector Model</h5>
+          <table class="table-hover model-selection">
+            <thead>
+              <tr>
+                <th>name</th>
+                <th>size</th>
+                <th>epochs</th>
+                <th>training results</th>
+                <th>validation results</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                onclick="selectModel(this,'detector')"
+                data-model="plate_detector_e1"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+                <td>1</td>
+                <td>
+                  <div
+                    popover-bottom="box_loss: 2.7293 - class_loss: 81.0136 - loss: 83.7430"
+                    style="margin: 0"
+                  >
+                    <label for="modal-1"> training </label>
+                    <input class="modal-state" id="modal-1" type="checkbox" />
+                    <div class="modal">
+                      <label class="modal-bg" for="modal-1"></label>
+                      <div class="modal-body">
+                        <label class="btn-close" for="modal-1">X</label>
+                        <h4 class="modal-title">Modal Title</h4>
+                        <h5 class="modal-subtitle">Modal Subtitle</h5>
+                        <p class="modal-text">
+                          This is an example of modal which is implemented with
+                          pure CSS! :D
+                        </p>
+                        <label for="modal-1">Nice!</label>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div
+                    popover-bottom="MaP: 0.5142 - MaP@[IoU=50]: 0.8632 - MaP@[IoU=75]: 0.5824 - MaP@[area=small]: 0.3351 - MaP@[area=medium]: 0.6169 - MaP@[area=large]: 0.5014 - Recall@[max_detections=1]: 0.5314 - Recall@[max_detections=10]: 0.5958 - Recall@[max_detections=100]: 0.5958 - Recall@[area=small]: 0.4460 - Recall@[area=medium]: 0.6944 - Recall@[area=large]: 0.5991"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+              </tr>
+              <tr
+                onclick="selectModel(this,'detector')"
+                data-model="plate_detector"
+                style="background: #69a1d433"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+                <td>3</td>
+              </tr>
+              <tr
+                onclick="selectModel(this,'detector')"
+                data-model="plate_detector_e3_m"
+                style="background: #69a1d433"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  medium
+                  <div popover-bottom="26M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+                <td>3</td>
+                <td>
+                  <div
+                    popover-bottom="box_loss: 1.1675 - class_loss: 0.6682 - loss: 1.8357"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+                <td>
+                  <div
+                    popover-bottom="MaP: 0.5843 - MaP@[IoU=50]: 0.8867 - MaP@[IoU=75]: 0.6897 - MaP@[area=small]: 0.4411 - MaP@[area=medium]: 0.6713 - MaP@[area=large]: 0.5395 - Recall@[max_detections=1]: 0.5986 - Recall@[max_detections=10]: 0.6545 - Recall@[max_detections=100]: 0.6545 - Recall@[area=small]: 0.5295 - Recall@[area=medium]: 0.7433 - Recall@[area=large]: 0.6226"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <h5 class="card-subtitle" style="margin-top: 16px">
+            Plate Recognizer Model
+          </h5>
+          <table class="table-hover model-selection">
+            <thead>
+              <tr>
+                <th>name</th>
+                <th>size</th>
+                <th>epochs</th>
+                <th>validation results</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                onclick="selectModel(this,'recognizer')"
+                data-model="plate_recognizer"
+                style="background: #69a1d433"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+                <td>3</td>
+              </tr>
+              <tr
+                onclick="selectModel(this,'recognizer')"
+                data-model="plate_recognizer_e5"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  small
+                  <div popover-bottom="13M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+
+                <td>5</td>
+                <td>
+                  <div
+                    popover-bottom="box_loss: 0.8680 - class_loss: 0.0130 - loss: 0.8810"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+                <td>
+                  <div
+                    popover-bottom="MaP: 0.5672 - MaP@[IoU=50]: 0.7952 - MaP@[IoU=75]: 0.6857 - MaP@[area=small]: 0.0000e+00 - MaP@[area=medium]: 0.6867 - MaP@[area=large]: 0.5426 - Recall@[max_detections=1]: 0.5497 - Recall@[max_detections=10]: 0.6141 - Recall@[max_detections=100]: 0.6141 - Recall@[area=small]: 0.0000e+00 - Recall@[area=medium]: 0.7253 - Recall@[area=large]: 0.5924"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+              </tr>
+              <tr
+                onclick="selectModel(this,'recognizer')"
+                data-model="plate_recognizer_e2_m"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  medium
+                  <div popover-bottom="26M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+
+                <td>2</td>
+                <td>
+                  <div
+                    popover-bottom="box_loss: 0.9695 - class_loss: 0.0186 - loss: 0.9881"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+                <td>
+                  <div
+                    popover-bottom="MaP: 0.5056 - MaP@[IoU=50]: 0.7251 - MaP@[IoU=75]: 0.6018 - MaP@[area=small]: 0.0000e+00 - MaP@[area=medium]: 0.6259 - MaP@[area=large]: 0.4593 - Recall@[max_detections=1]: 0.4972 - Recall@[max_detections=10]: 0.5599 - Recall@[max_detections=100]: 0.5599 - Recall@[area=small]: 0.0000e+00 - Recall@[area=medium]: 0.6927 - Recall@[area=large]: 0.4952"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+              </tr>
+
+              <tr
+                onclick="selectModel(this,'recognizer')"
+                data-model="plate_recognizer_e3_l"
+              >
+                <td>YOLO v8</td>
+                <td class="has-info">
+                  large
+                  <div popover-bottom="41M parameters" style="margin: 0">
+                    <img
+                      class="no-border info"
+                      src="/static/assets/icons/info.svg"
+                    />
+                  </div>
+                </td>
+
+                <td>3</td>
+                <td>
+                  <div
+                    popover-bottom="box_loss: 0.9215 - class_loss: 0.0151 - loss: 0.9366"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+                <td>
+                  <div
+                    popover-bottom="MaP: 0.4944 - MaP@[IoU=50]: 0.7506 - MaP@[IoU=75]: 0.5873 - MaP@[area=small]: 0.0000e+00 - MaP@[area=medium]: 0.5958 - MaP@[area=large]: 0.4779 - Recall@[max_detections=1]: 0.4887 - Recall@[max_detections=10]: 0.5497 - Recall@[max_detections=100]: 0.5497 - Recall@[area=small]: 0.0000e+00 - Recall@[area=medium]: 0.6311 - Recall@[area=large]: 0.5491"
+                    style="margin: 0"
+                  >
+                    show
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div> -->
