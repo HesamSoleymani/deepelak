@@ -11,22 +11,24 @@ import keras_cv
 import base64
 import uuid
 import os
+import glob
+import psutil
+
+def print_memory():
+    mem = psutil.virtual_memory()
+    print(f"Used: {mem.used/1024/1024:.1f} MB / Total: {mem.total/1024/1024:.1f} MB")
 
 app = FastAPI()
 
 print("Loading models...")
-plate_detector = keras.models.load_model("./models/plate_detector.keras")
-plate_recognizer = keras.models.load_model("./models/plate_recognizer.keras")
-plate_detector_e1 = keras.models.load_model("./models/plate_detector_e1.keras")
-plate_recognizer_e5 = keras.models.load_model("./models/plate_recognizer_e5.keras")
+print_memory()
+models = {}
+for filepath in glob.glob("./final_models/**/*.keras", recursive=True):
+    model_name = os.path.splitext(os.path.basename(filepath))[0]
+    print(f"Loading model: {model_name} from {filepath}")
+    models[model_name] = keras.models.load_model(filepath)
+    print_memory()
 print("Models loaded successfully!")
-
-models = {
-    "plate_detector": plate_detector,
-    "plate_recognizer": plate_recognizer,
-    "plate_detector_e1": plate_detector_e1,
-    "plate_recognizer_e5": plate_recognizer_e5,
-}
 
 class_mapping = {0: '9', 1: '1', 2: 'و', 3: '2', 4: '6', 5: '7', 6: '8', 7: 'ن', 8: '3', 9: '5', 10: 'م', 11: 'ی', 12: 'ت', 13: 'ل', 14: '4', 15: 'ه\u200d', 16: 'ط', 17: '0', 18: 'د', 19: 'ق', 20: 'ص', 21: 'ب', 22: 'ج', 23: 'س', 24: 'ع', 25: 'ژ (معلولین و جانبازان)', 26: 'الف', 27: 'ز', 28: 'ش', 29: 'پ', 30: 'ث'}
 
