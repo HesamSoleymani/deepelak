@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
@@ -11,51 +12,35 @@ import keras_cv
 import base64
 import uuid
 import os
-import glob
-import psutil
-from keras import backend as K
-
+import subprocess
 import keras
 import gc
 
 models = {}
+
+def run_predict(model_path, arr):
+    np.save("input.npy", arr)
+    result = subprocess.run(
+        ["python3", "predict.py", model_path, "input.npy"],
+        capture_output=True,
+        text=True
+    )
+    start = result.stdout.find("{")
+    end = result.stdout.rfind("}") + 1
+    json_str = result.stdout[start:end]
+    return json.loads(json_str)
 
 def build_model_path(model_name: str) -> str:
     folder = model_name.rsplit("_e", 1)[0]
     base_dir = "final_models"
     return os.path.join(base_dir, folder, model_name + ".keras")
 
-def print_memory():
-    import psutil
-    mem = psutil.virtual_memory()
-    process = psutil.Process()
-    process_mem = process.memory_info().rss / 1024 / 1024
-    print(f"System: {mem.used/1024/1024:.1f}MB used / Process: {process_mem:.1f}MB")
-
-def get_model(model_name: str, path: str):
-    if model_name not in models:
-        print(f"Loading model {model_name}...")
-        models[model_name] = keras.models.load_model(path)
-        print_memory()
-    return models[model_name]
-
-
-
-def unload_model(model_name: str):
-    print(f"****Unloading {model_name}****")
-    if model_name in models:
-        print(f"Deleting model {model_name}...")
-        del models[model_name]
-        
-        # Aggressive cleanup for CPU-only
-        for _ in range(3):
-            gc.collect()
-        
-        K.clear_session()
-        tf.keras.backend.clear_session()
-        print_memory()
-        return True
-    return False
+# def print_memory():
+#     import psutil
+#     mem = psutil.virtual_memory()
+#     process = psutil.Process()
+#     process_mem = process.memory_info().rss / 1024 / 1024
+#     print(f"System: {mem.used/1024/1024:.1f}MB used / Process: {process_mem:.1f}MB")
 
 app = FastAPI()
 
@@ -104,8 +89,6 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
         raise HTTPException(status_code=400, detail="File must be an image")
     
     try:   
-        model_path = build_model_path(model)
-        current_model = get_model(model, model_path)
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
         
@@ -121,8 +104,8 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
         
         image_resized = tf.image.resize_with_pad(image_tensor, target_height=640, target_width=640)
         
-        plate_pred = current_model.predict(np.array([image_resized]))
-        unload_model(model)
+        plate_pred = run_predict(build_model_path(model), np.array([image_resized]))
+        # print_memory()
 
         conf_threshold = 0.5
 
