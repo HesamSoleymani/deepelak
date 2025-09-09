@@ -14,9 +14,17 @@ import os
 import glob
 import psutil
 from keras import backend as K
+from multiprocessing import Process, Queue
 
 import keras
 import gc
+
+def run_model(model_path, image_array, queue):
+    print("running")
+    model = tf.keras.models.load_model(model_path)
+    print("model loaded")
+    pred = model.predict(np.array([image_array]))
+    queue.put(pred) 
 
 models = {}
 
@@ -110,7 +118,20 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
         
         image_resized = tf.image.resize_with_pad(image_tensor, target_height=640, target_width=640)
         
-        plate_pred = current_model.predict(np.array([image_resized]))
+        # Create subprocess
+        q = Queue()
+        p = Process(target=run_model, args=(model_path, image_resized, q))
+        p.start()
+        p.join(timeout=10)  # wait for it to finish
+        if p.is_alive():
+            p.terminate()
+            p.join()
+        try:
+            result = q.get_nowait()
+        except Exception:
+            result = None
+
+        plate_pred = result
         unload_model(model)
 
         conf_threshold = 0.5
@@ -155,6 +176,7 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
             "sizes": [w,h,w1,h1],
             "image_tensor": image_tensor,
         }
+         
         return JSONResponse(content={
             "image": image_base64,
             "rid": rid,
