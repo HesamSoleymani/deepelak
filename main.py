@@ -14,17 +14,9 @@ import os
 import glob
 import psutil
 from keras import backend as K
-from multiprocessing import Process, Queue
 
 import keras
 import gc
-
-def run_model(model_path, image_array, queue):
-    print("running")
-    model = tf.keras.models.load_model(model_path)
-    print("model loaded")
-    pred = model.predict(np.array([image_array]))
-    queue.put(pred) 
 
 models = {}
 
@@ -33,6 +25,13 @@ def build_model_path(model_name: str) -> str:
     base_dir = "final_models"
     return os.path.join(base_dir, folder, model_name + ".keras")
 
+def print_memory():
+    import psutil
+    mem = psutil.virtual_memory()
+    process = psutil.Process()
+    process_mem = process.memory_info().rss / 1024 / 1024
+    print(f"System: {mem.used/1024/1024:.1f}MB used / Process: {process_mem:.1f}MB")
+
 def get_model(model_name: str, path: str):
     if model_name not in models:
         print(f"Loading model {model_name}...")
@@ -40,19 +39,23 @@ def get_model(model_name: str, path: str):
         print_memory()
     return models[model_name]
 
+
+
 def unload_model(model_name: str):
-    print("****", model_name, "****",model_name in models)
+    print(f"****Unloading {model_name}****")
     if model_name in models:
-        print(f"Unloading model {model_name}...")
+        print(f"Deleting model {model_name}...")
         del models[model_name]
-        gc.collect()
+        
+        # Aggressive cleanup for CPU-only
+        for _ in range(3):
+            gc.collect()
+        
         K.clear_session()
+        tf.keras.backend.clear_session()
         print_memory()
-
-
-def print_memory():
-    mem = psutil.virtual_memory()
-    print(f"Used: {mem.used/1024/1024:.1f} MB / Total: {mem.total/1024/1024:.1f} MB")
+        return True
+    return False
 
 app = FastAPI()
 
@@ -118,20 +121,7 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
         
         image_resized = tf.image.resize_with_pad(image_tensor, target_height=640, target_width=640)
         
-        # Create subprocess
-        q = Queue()
-        p = Process(target=run_model, args=(model_path, image_resized, q))
-        p.start()
-        p.join(timeout=10)  # wait for it to finish
-        if p.is_alive():
-            p.terminate()
-            p.join()
-        try:
-            result = q.get_nowait()
-        except Exception:
-            result = None
-
-        plate_pred = result
+        plate_pred = current_model.predict(np.array([image_resized]))
         unload_model(model)
 
         conf_threshold = 0.5
@@ -176,7 +166,6 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
             "sizes": [w,h,w1,h1],
             "image_tensor": image_tensor,
         }
-         
         return JSONResponse(content={
             "image": image_base64,
             "rid": rid,
