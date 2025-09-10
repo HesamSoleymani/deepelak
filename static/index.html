@@ -345,18 +345,22 @@
       <div class="card md-8 col margin-bottom">
         <div class="card-body">
           <h4 class="card-title">Results</h4>
-          <p class="card-text">
+          <div class="col padding-small">
+            <label for="result-type">Result Type</label>
+            <select id="result-type" class="input-block">
+              <option value="detector">Detector</option>
+              <option value="recognizer">Recognizer</option>
+            </select>
+          </div>
+          <p class="card-text" style="margin-top: 20px !important">
+            Compare all models
+          </p>
+          <canvas id="mapComparisonChart" width="800" height="400"></canvas>
+          <p class="card-text" style="margin-top: 40px !important">
             Visualize model metrics over epochs, model size, or other
             parameters.
           </p>
           <div class="row margin-bottom">
-            <div class="col padding-small">
-              <label for="result-type">Result Type</label>
-              <select id="result-type" class="input-block">
-                <option value="detector">Detector</option>
-                <option value="recognizer">Recognizer</option>
-              </select>
-            </div>
             <div class="col padding-small">
               <label for="phase-type">Phase</label>
               <select id="phase-type" class="input-block">
@@ -408,6 +412,20 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+      function shortenLabel(modelName) {
+        const parts = modelName.split("_");
+
+        let type = parts[0].startsWith("recognizer") ? "rec" : "det"; // کوتاه کردن
+        let size =
+          parts.find((p) => ["xs", "s", "m", "l", "xl"].includes(p)) || "";
+        let epochPart = parts.find((p) => p.startsWith("e"));
+        let epoch = epochPart
+          ? "e" + parseInt(epochPart.replace("e", ""), 10)
+          : "";
+
+        return [type, size, epoch].filter(Boolean).join("_");
+      }
+
       let allResults = [];
       let allFiles = [];
 
@@ -467,13 +485,12 @@
         allFiles = await res.json();
         await reloadResults();
       }
-
+      let mapComparisonChartInstance = null;
       async function reloadResults() {
         allResults = [];
         const resultType = document.getElementById("result-type").value;
         const prefix = resultType === "detector" ? "detector_" : "recognizer_";
         const filteredFiles = allFiles.filter((f) => f.startsWith(prefix));
-
         const values = {
           epoch: new Set(),
           lr: new Set(),
@@ -498,6 +515,47 @@
           values.lr.add(lr);
           if (!isNaN(epoch) && epoch > 0) values.epoch.add(epoch);
         }
+
+        // map comparison chart
+        const data = allResults.map((r) => ({
+          model: r.Name,
+          map: parseFloat(r["MaP"]),
+        }));
+
+        data.sort((a, b) => a.map - b.map);
+        if (mapComparisonChartInstance) {
+          mapComparisonChartInstance.destroy();
+        }
+        const ctx = document
+          .getElementById("mapComparisonChart")
+          .getContext("2d");
+        mapComparisonChartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: data.map((d) => shortenLabel(d.model)),
+            datasets: [
+              {
+                label: "MaP",
+                data: data.map((d) => d.map),
+                backgroundColor: "rgba(54, 162, 235, 0.6)",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: {
+                ticks: {
+                  maxRotation: 90,
+                  minRotation: 45,
+                },
+              },
+              y: {
+                // beginAtZero: true,
+              },
+            },
+          },
+        });
 
         // Populate dropdowns
         const toArray = (set) =>
