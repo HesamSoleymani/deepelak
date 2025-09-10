@@ -19,6 +19,8 @@ import gc
 models = {}
 
 def run_predict(model_path, arr):
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Model file not found: {model_path}")
     np.save("input.npy", arr)
     result = subprocess.run(
         ["python3", "predict.py", model_path, "input.npy"],
@@ -27,6 +29,8 @@ def run_predict(model_path, arr):
     )
     start = result.stdout.find("{")
     end = result.stdout.rfind("}") + 1
+    if start == -1 or end == 0:
+        raise RuntimeError(f"Model prediction failed: {result.stdout}\n{result.stderr}")
     json_str = result.stdout[start:end]
     return json.loads(json_str)
 
@@ -88,12 +92,10 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    try:   
+    try:
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
-        
         image_tensor = tf.convert_to_tensor(np.array(image))
-        
         h, w = image_tensor.shape[0], image_tensor.shape[1]
         if h > w:
             w1 = w * 640 / h
@@ -101,19 +103,18 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
         else:
             h1 = h * 640 / w
             w1 = 640
-        
         image_resized = tf.image.resize_with_pad(image_tensor, target_height=640, target_width=640)
-        
-        plate_pred = run_predict(build_model_path(model), np.array([image_resized]))
-        # print_memory()
-
+        try:
+            plate_pred = run_predict(build_model_path(model), np.array([image_resized]))
+        except FileNotFoundError as e:
+            return JSONResponse(status_code=404, content={"error": str(e)})
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
         conf_threshold = 0.5
-
         conf = plate_pred["confidence"][0]
         boxes = plate_pred["boxes"][0]
         classes = plate_pred["classes"][0]
         valid_count = 0
-
         for i in range(len(conf)):
             if conf[i] < conf_threshold:
                 conf[i] = -1
@@ -121,12 +122,9 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
                 boxes[i] = [-1, -1, -1, -1]
             else:
                 valid_count += 1
-
-        plate_pred["num_detections"][0] = valid_count        
-
+        plate_pred["num_detections"][0] = valid_count
         rid = str(uuid.uuid4())
         filename = "car_" + rid + ".png"
-
         keras_cv.visualization.plot_bounding_box_gallery(
             images=np.array([image_resized]),
             value_range=(0, 255),
@@ -137,16 +135,13 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
             cols=1,
             path=filename,
         )
-
         with open(filename, "rb") as f:
             image_base64 = base64.b64encode(f.read()).decode('utf-8')
-
         os.remove(filename)
-
         temp_storage[rid] = {
             "index": 0,
             "pred": plate_pred,
-            "sizes": [w,h,w1,h1],
+            "sizes": [w, h, w1, h1],
             "image_tensor": image_tensor,
         }
         return JSONResponse(content={
@@ -154,9 +149,8 @@ async def predict_license_plate(model: str = Form(...),file: UploadFile = File(.
             "rid": rid,
             "count": str(plate_pred["num_detections"][0])
         })
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error : {str(e)}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/recognize")
 async def predict_license_plate(rid:str,model:str="model_recognizer"):
@@ -164,26 +158,25 @@ async def predict_license_plate(rid:str,model:str="model_recognizer"):
         raise HTTPException(status_code=400, detail="invalid rid")
     
     try:
-        model_path = build_model_path(model)
-        current_model = get_model(model, model_path)
         i = temp_storage[rid]["index"]
         plate_pred = temp_storage[rid]["pred"]
         box = plate_pred["boxes"][0][i]
         image_tensor = temp_storage[rid]["image_tensor"]
-        w,h,w1,h1 = temp_storage[rid]["sizes"]
+        w, h, w1, h1 = temp_storage[rid]["sizes"]
         filename = "plate_" + rid + ".png"
-            
         x1 = int((box[0] - (640 - w1) / 2) * max(w, h) / 640)
         x2 = int((box[2] - (640 - w1) / 2) * max(w, h) / 640)
         y1 = int((box[1] - (640 - h1) / 2) * max(w, h) / 640)
         y2 = int((box[3] - (640 - h1) / 2) * max(w, h) / 640)
-        
         plate_region = image_tensor[y1:y2, x1:x2]
         plate_resized = tf.image.resize_with_pad(plate_region, target_height=640, target_width=640)
-
-        char_pred = models[model].predict(np.array([plate_resized]))
+        try:
+            char_pred = run_predict(build_model_path(model), np.array([plate_resized]))
+        except FileNotFoundError as e:
+            return JSONResponse(status_code=404, content={"error": str(e)})
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
         license_text = extract_license_text(char_pred)
-
         keras_cv.visualization.plot_bounding_box_gallery(
             images=np.array([plate_resized]),
             value_range=(0, 255),
@@ -194,20 +187,15 @@ async def predict_license_plate(rid:str,model:str="model_recognizer"):
             cols=1,
             path=filename,
         )
-
         with open(filename, "rb") as f:
             image_base64 = base64.b64encode(f.read()).decode('utf-8')
-
         os.remove(filename)
-
         temp_storage[rid]["index"] = i + 1
 
-        unload_model(model_path)
         return JSONResponse(content={
             "image": image_base64,
             "text": license_text,
             "more": bool(plate_pred["num_detections"][0] != temp_storage[rid]["index"])
         })
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error : {str(e)}")
+        return JSONResponse(status_code=500, content={"error": str(e)})

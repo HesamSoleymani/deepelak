@@ -1,0 +1,19 @@
+{
+    "Epoch": "9",
+    "Name": "recognizer_yolov8_xs_coco_0.001_e0009",
+    "box_loss": "0.7931250333786011",
+    "class_loss": "0.012152859941124916",
+    "loss": "0.8051848411560059",
+    "MaP": "0.6260329484939575",
+    "MaP@[IoU=50]": "0.8290088772773743",
+    "MaP@[IoU=75]": "0.7469893097877502",
+    "MaP@[area=small]": "0.0",
+    "MaP@[area=medium]": "0.7331055402755737",
+    "MaP@[area=large]": "0.5937496423721313",
+    "Recall@[max_detections=1]": "0.6077664494514465",
+    "Recall@[max_detections=10]": "0.6762628555297852",
+    "Recall@[max_detections=100]": "0.6762628555297852",
+    "Recall@[area=small]": "0.0",
+    "Recall@[area=medium]": "0.7808836698532104",
+    "Recall@[area=large]": "0.6421311497688293"
+}

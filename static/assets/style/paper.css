@@ -2598,6 +2598,7 @@ fieldset.form-group {
   transform: translateX(-50%) translateY(-100%);
   transition: opacity 235ms ease-in-out, visibility 0s linear 235ms;
   visibility: hidden;
+  z-index: 2;
 }
 
 [popover-left]::before {
