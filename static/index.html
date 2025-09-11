@@ -17,7 +17,6 @@
           <p class="card-text">
             Explore ALPR models in action — upload images, tweak settings, and
             compare automatic license plate recognition results instantly.
-            (coming soon)
           </p>
           <a
             href="https://colab.research.google.com/drive/1AQWI11t2PuihdivXBwxGZpU8Wf_9wETD"
@@ -315,11 +314,11 @@
           <div class="model">
             <span>model:</span>
             <span class="badge secondary">YOLO V8</span>
-            <div
+            <!-- <div
               popover-bottom="epochs = 3 | learning rate = 0.001 | global clipnorm = 10"
             >
               <img class="no-border info" src="/static/assets/icons/info.svg" />
-            </div>
+            </div> -->
           </div>
         </div>
         <div id="car"></div>
@@ -331,11 +330,11 @@
           <div class="model">
             <span>model:</span>
             <span class="badge secondary">YOLO V8</span>
-            <div
+            <!-- <div
               popover-bottom="epochs = 3 | learning rate = 0.001 | global clipnorm = 10"
             >
               <img class="no-border info" src="/static/assets/icons/info.svg" />
-            </div>
+            </div> -->
           </div>
         </div>
         <div class="row flex-spaces" id="plate-container"></div>
@@ -806,7 +805,10 @@
       document.getElementById("filesize").innerHTML = displaySize;
 
       const detection_payload = new FormData();
-      detection_payload.append("model", window.selected_detector_model);
+      detection_payload.append(
+        "model",
+        window.selected_detector_model.replace("_none", "")
+      );
       detection_payload.append("file", selectedFile);
 
       try {
@@ -864,7 +866,9 @@
           plateContainer.appendChild(loading);
           plateContainer.lastChild.className = "col md-6";
           const recognition_response = await fetch(
-            `/recognize?rid=${detection_data.rid}&model=${window.selected_recognizer_model}`
+            `/recognize?rid=${
+              detection_data.rid
+            }&model=${window.selected_recognizer_model.replace("_none", "")}`
           );
           const recognition_data = await recognition_response.json();
           if (recognition_data.error) {
