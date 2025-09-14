@@ -1,6 +1,6 @@
 {
     "Epoch": "3",
-    "Name": "detector_yolov8_xs_0.001_e0003",
+    "Name": "detector_yolov8_xs_none_0.001_e0003",
     "box_loss": "1.1502244472503662",
     "class_loss": "0.6480976939201355",
     "loss": "1.798254370689392",
